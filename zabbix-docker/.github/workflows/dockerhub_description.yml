@@ -1,0 +1,82 @@
+name: DockerHub Description
+
+on:
+  push:
+    branches:
+      - trunk
+    paths:
+      - 'Dockerfiles/*/README.md'
+      - '.github/workflows/dockerhub_description.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: dockerhub-description-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKER_REPOSITORY: "zabbix"
+  IMAGES_PREFIX: "zabbix-"
+  DOCKERFILES_DIRECTORY: "./Dockerfiles"
+
+permissions:
+  contents: read
+
+jobs:
+  update-description:
+    name: Update description
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+          - build-base
+          - build-mysql
+          - build-pgsql
+          - build-sqlite3
+          - agent
+          - agent2
+          - java-gateway
+          - proxy-mysql
+          - proxy-sqlite3
+          - server-mysql
+          - server-pgsql
+          - snmptraps
+          - web-apache-mysql
+          - web-apache-pgsql
+          - web-nginx-mysql
+          - web-nginx-pgsql
+          - web-service
+
+    steps:
+      - name: Block egress traffic
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            hub.docker.com:443
+
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Check README file
+        run: |
+          set -Eeuo pipefail
+          readme="${DOCKERFILES_DIRECTORY}/${{ matrix.component }}/README.md"
+          if [[ ! -f "$readme" ]]; then
+            echo "::error::README file is missing: $readme"
+            exit 1
+          fi
+
+      - name: Update DockerHub repo description
+        uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ env.DOCKER_REPOSITORY }}/${{ env.IMAGES_PREFIX }}${{ matrix.component }}
+          readme-filepath: ${{ env.DOCKERFILES_DIRECTORY }}/${{ matrix.component }}/README.md
