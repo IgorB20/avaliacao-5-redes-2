@@ -147,22 +147,3 @@ docker start snmp-agent
 
 Quando a coleta for restabelecida, o alerta deve retornar ao estado normal.
 
-Texto sugerido para o relatorio:
-
-```text
-Para testar a criacao de alertas com base em OIDs SNMP, foi criado no Zabbix um
-item utilizando o OID 1.3.6.1.2.1.1.3.0, correspondente ao tempo de atividade
-do agente SNMP. O item foi configurado com a chave snmp.custom.uptime e coleta
-periodica de dados.
-
-Em seguida, foi criada uma trigger para gerar um alerta caso o Zabbix
-permanecesse sem receber valores desse OID por dois minutos:
-
-nodata(/SNMP-Agent-1/snmp.custom.uptime,2m)=1
-
-Para realizar o teste, o container do agente SNMP foi interrompido com o comando
-docker stop snmp-agent. Apos o periodo configurado, o Zabbix identificou a
-ausencia de respostas e gerou o alerta. Depois que o container foi iniciado
-novamente com docker start snmp-agent, a coleta foi restabelecida e o alerta
-retornou ao estado normal.
-```
